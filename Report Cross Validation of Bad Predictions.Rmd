@@ -1,0 +1,61 @@
+---
+title: "Report Cross Validation of Bad Error Predictions"
+author: "Dirk Cotton"
+date: "5/9/2018"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+load ("~/R Projects/HRS/CrossVal.RData")
+```
+
+The consumption data predicted by our models based on HRS wealth and income data showed large errors relative to reported consumption from the CAMS data base for a large number of households. We cross-validated our models to determine if removing those households with poor predictions would improve prediction results.
+
+We us a model for one-person households. The regression model for one-person households follows:
+
+```{r warning=FALSE,echo=FALSE}
+print(fit)
+
+```
+
+We predicted consumption using the "fit" model of predictions with acceptable errors (< 100%), randomly selecting `r length(highError1Phhid)` households with acceptable errors as the prediction set from a data set of `r dim(cams1Pgtw)[1]` CAMS households.
+
+For the second cross-validation, we used `r length(highError1Phhid)` households with high errors as the predictions set.
+
+We plotted the density of the eroor results (predicted consumption minus reported consumption) and generated the following two plots:
+
+```{r warning=FALSE,echo=FALSE}
+
+source('~/R Projects/HRS/CrossValidate 1P HH Good Predictions.R')
+
+plot(density(crossValOnePerson[,1]),main="1-Person Household Good Predictions\nPredicted - Actual",ylim=c(0,.0001),xlab="Prediction Error ($)")
+for (i in 2:n){
+  lines(density(crossValOnePerson[,i]))
+}
+
+```
+
+
+```{r warning=FALSE,echo=FALSE}
+source('~/R Projects/HRS/CrossValidate 1P HH Good Predictions.R')
+plot(density(crossValOnePerson[,1]),main="1-Person Household Bad Predictions\nPredicted - Actual",xlab="Prediction Error ($)")
+for (i in 2:n){
+  lines(density(crossValOnePerson[,i]))
+}
+```
+
+Our conclusion from these results is that removing households with poor predictions from the model will not improve the model's predictions.
+
+
+NOTES: 
+
+[1] This output is created by running the following scripts in order:
+
+1. source('~/R Projects/HRS/Validate Predicted CAMS Data.R')
+2. source('~/R Projects/HRS/CrossValidate 1P HH Good Predictions.R')
+3. source('~/R Projects/HRS/CrossValidate 1P HH Bad Predictions.R')
+
+and then knitting the Word document with this script.
+
+[2] The errant line on the "Good Predictions" graph is caused by a household with an extreme negative prediction that doesn't fit within the graph's scale.

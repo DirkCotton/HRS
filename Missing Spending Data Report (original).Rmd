@@ -1,0 +1,64 @@
+---
+title: "Missing Spending Data Report"
+author: "Dirk Cotton"
+date: "4/17/2018"
+output:
+  word_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+ load ("saveCams")
+ knitr::opts_chunk$set(echo = TRUE)
+ hrs <- read.csv("HRS Retired.csv")
+ retiredHHID <- hrs$hhid[hrs$selectedBy != "notRetired"]
+```
+
+We identify `r sum(hrs$selectedBy != "notRetired")` retired households from the HRS database. However, spending data in the CAMS database *for these retired households* is available for only `r sum(cams$hhid %in% retiredHHID)` of those. To replace the missing spending data in our data set of retired households identified from HRS data, we impute retired household spending when the data is missing from CAMS.
+
+CAMS household data is available for `r retiredHRSinCams` of the households identified as retired in HRS data.
+
+We are interested in household spending for the wave in which each household was determined to have first retired (wave of retirement, or WOR). CAMS data is available beginning with wave 5 so we first remove all CAMS households determined from HRS data to have retired prior to wave 5 or not to have retired. `r beforeW5` households are removed from our CAMS data set on this basis, leaving `r afterW5 `households.
+
+`r noWOR` of the remaining CAMS households provide no spending data for the wave of retirement. These observations are rejected leaving `r hasWOR` households in our CAMS data set.
+
+We then reject `r noIncomeSave` CAMS households that have neither data for current income or any savings in HRS, despite providing consumption data, as we cannot identify the source of this consumption. This action leaves `r afterNoInc` observations in the CAMS data set.
+
+These actions leave `r dim(cams1P)[1]` one-person households and `r dim(cams2P)[1]` two-person households with which we can model missing non-durable consumption expenditures by household when that data is missing from CAMS.
+
+We impute spending separately for one-person and two-person households using multiple linear regression models.
+
+For one-person households, the y-variable for our model is consumer non-durable expenditures for the household for the wave of retirement. The model's x-variables are:
+
+  + Social Security income for the wave of retirement
+  + Total portfolio assets for the wave of retirement
+  + Pension and annuity income for the wave of retirement
+  + age at retirement
+  + gender (equals 1 for male, else zero), and
+  + Wave number of retirement (5 through 12)
+
+Wave number is modeled as a series of dummy variables, d5 through d12. If a household retired in wave 11, for example, d11 for that household will equal 1 and dummy variables for all other waves will equal zero for that household. (Only one of the eight dummy variables for a household will equal 1.)
+
+The multiple progression is performed suppressing calculation of a y-intercept value. All x-variables expressed in dollars are normalized by dividing each x-variable for a household by the sum of all dollar-denominated x-variables for that household.
+
+The results of the linear regression analysis for one-person households are summarized:
+
+```{r warnings=FALSE, echo=FALSE}
+summary(fit)
+```
+
+A few modifications are made to the regression model for two-person households:
+
+  - All HRS two-person households consist of one male and one female, so gender is not a factor
+  - Social Security retirement income for the second household member must be added to the model
+  - The age of the second household member must also be added to the model
+  
+The results of the multiple regression analysis for two-person households are summarized:
+
+```{r warnings=FALSE, echo=FALSE}
+summary(fit2)
+```
+
+
+Coefficients determined by the respective linear regression results are used to impute a "predicted" amount of consumer non-durable spending for retired households from the HRS data base when no spending is available for the household's wave of retirement.
+
